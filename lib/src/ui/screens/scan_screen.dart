@@ -78,8 +78,7 @@ class ScanScreen extends StatelessWidget {
                                   child: Text(
                                     strings.text(state.captureError!),
                                     style: TextStyle(
-                                      color:
-                                          theme.colorScheme.onErrorContainer,
+                                      color: theme.colorScheme.onErrorContainer,
                                     ),
                                   ),
                                 ),
@@ -186,7 +185,7 @@ class ScanScreen extends StatelessWidget {
                       Card(
                         elevation: 0,
                         color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.4),
+                            .withValues(alpha: 0.4),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Row(
@@ -202,7 +201,9 @@ class ScanScreen extends StatelessWidget {
                                 context,
                                 Icons.description_outlined,
                                 '$totalPages',
-                                strings.text(totalPages == 1 ? 'page' : 'pages'),
+                                strings.text(
+                                  totalPages == 1 ? 'page' : 'pages',
+                                ),
                               ),
                               _buildStatItem(
                                 context,
@@ -253,10 +254,9 @@ class ScanScreen extends StatelessWidget {
 
                       // Recognition Button
                       OutlinedButton.icon(
-                        onPressed:
-                            state.isBusy || pendingOcrCount == 0
-                                ? null
-                                : state.processQueuedPages,
+                        onPressed: state.isBusy || pendingOcrCount == 0
+                            ? null
+                            : state.processQueuedPages,
                         icon: state.isBusy
                             ? const SizedBox(
                                 width: 16,
@@ -267,17 +267,16 @@ class ScanScreen extends StatelessWidget {
                               )
                             : const Icon(Icons.cloud_sync_outlined),
                         label: Text(strings.text('processQueue')),
-                        style:
-                            pendingOcrCount > 0 && !state.isBusy
-                                ? OutlinedButton.styleFrom(
-                                    side: BorderSide(
-                                      color: theme.colorScheme.primary,
-                                      width: 1.5,
-                                    ),
-                                    backgroundColor: theme.colorScheme.primary
-                                        .withOpacity(0.05),
-                                  )
-                                : null,
+                        style: pendingOcrCount > 0 && !state.isBusy
+                            ? OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 1.5,
+                                ),
+                                backgroundColor: theme.colorScheme.primary
+                                    .withValues(alpha: 0.05),
+                              )
+                            : null,
                       ),
                     ],
                   ),
@@ -298,10 +297,9 @@ class ScanScreen extends StatelessWidget {
     bool highlight = false,
   }) {
     final theme = Theme.of(context);
-    final color =
-        highlight
-            ? theme.colorScheme.error
-            : theme.colorScheme.onSurfaceVariant;
+    final color = highlight
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurfaceVariant;
     return Column(
       children: [
         Icon(icon, size: 20, color: color),
@@ -364,11 +362,11 @@ class _ScannerViewportState extends State<ScannerViewport>
             color: theme.colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -382,7 +380,7 @@ class _ScannerViewportState extends State<ScannerViewport>
                   child: Icon(
                     Icons.document_scanner_outlined,
                     size: 110,
-                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
                   ),
                 ),
                 // Corner brackets
@@ -413,15 +411,17 @@ class _ScannerViewportState extends State<ScannerViewport>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            theme.colorScheme.primary.withOpacity(0.01),
+                            theme.colorScheme.primary.withValues(alpha: 0.01),
                             theme.colorScheme.primary,
                             theme.colorScheme.primary,
-                            theme.colorScheme.primary.withOpacity(0.01),
+                            theme.colorScheme.primary.withValues(alpha: 0.01),
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.6),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.6,
+                            ),
                             blurRadius: 8,
                             spreadRadius: 2.5,
                           ),

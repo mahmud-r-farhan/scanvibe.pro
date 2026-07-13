@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:scanvibe_pro/src/app.dart';
 import 'package:scanvibe_pro/src/services/app_store.dart';
 import 'package:scanvibe_pro/src/services/image_capture_service.dart';
@@ -107,7 +106,6 @@ class _FakeImageCaptureService implements ImageCaptureService {
 
   final CapturedImage? capturedImage;
   final Object? exception;
-
 
   @override
   Future<CapturedImage?> pick(ImageSourceKind source) async {
