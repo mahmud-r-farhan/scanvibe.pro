@@ -38,13 +38,13 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo.png"
+  image_path: "assets/logo.jpg"
   adaptive_icon_background: "#0E1324"
-  adaptive_icon_foreground: "assets/logo.png"
+  adaptive_icon_foreground: "assets/logo.jpg"
 
 flutter_native_splash:
-  color: "#0E1324"
-  image: "assets/logo.png"
+  color: "#FCFDFF"
+  image: "assets/scanvibe.jpg"
   android_12:
-    image: "assets/logo.png"
-    color: "#0E1324"
+    image: "assets/scanvibe.jpg"
+    color: "#FCFDFF"
