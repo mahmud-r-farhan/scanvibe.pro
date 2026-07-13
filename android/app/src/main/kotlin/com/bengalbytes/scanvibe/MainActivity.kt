@@ -1,4 +1,4 @@
-package com.bengalbytes.scanvibe.scanvibe_pro
+package com.bengalbytes.scanvibe
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,30 +1,52 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:scanvibe_pro/main.dart';
+import 'package:scanvibe_pro/src/app.dart';
+import 'package:scanvibe_pro/src/services/app_store.dart';
+import 'package:scanvibe_pro/src/services/ocr_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows language onboarding first', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final state = await ScanVibeState.load(
+      store: AppStore(preferences),
+      ocrClient: _FakeOcrClient(),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(ScanVibeApp(state: state));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Choose your language'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
   });
+
+  testWidgets('shows document workspace after onboarding', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'scanvibe.onboarding_complete': true,
+      'scanvibe.locale': 'en',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final state = await ScanVibeState.load(
+      store: AppStore(preferences),
+      ocrClient: _FakeOcrClient(),
+    );
+
+    await tester.pumpWidget(ScanVibeApp(state: state));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Documents'), findsWidgets);
+    expect(find.text('No documents yet'), findsOneWidget);
+    expect(find.byIcon(Icons.document_scanner_outlined), findsOneWidget);
+  });
+}
+
+class _FakeOcrClient implements OcrClient {
+  @override
+  Future<OcrResult> extractText({
+    required String imagePath,
+    required String languageHint,
+  }) async {
+    return const OcrResult(text: 'Example text', confidence: 0.98);
+  }
 }

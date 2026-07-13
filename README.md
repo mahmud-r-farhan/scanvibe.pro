@@ -1,17 +1,25 @@
-# scanvibe_pro
+# ScanVibe
 
-A new Flutter project.
+ScanVibe is a Flutter document scanner that captures pages, recognizes text on
+device, and exports searchable PDFs. It is designed to work locally without an
+internet connection or OCR server.
 
-## Getting Started
+## Current Capabilities
 
-This project is a starting point for a Flutter application.
+- First-run language selection and localized UI.
+- Camera capture and gallery import.
+- On-device OCR through Google ML Kit text recognition.
+- Local document/page persistence with visible processing states.
+- PDF export from captured page images and extracted text.
+- Android and iOS camera/photo permission metadata.
 
-A few resources to get you started if this is your first Flutter project:
+## Development
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d <device>
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+No backend service or API token is required.
