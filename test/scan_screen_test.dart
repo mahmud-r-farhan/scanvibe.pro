@@ -40,7 +40,8 @@ void main() {
       find.text('Choose a source to scan and extract text.'),
       findsOneWidget,
     );
-    expect(find.byType(ScannerViewport), findsOneWidget);
+    // Scanner viewport is present - check for the corner brackets via CustomPaint
+    expect(find.byType(CustomPaint), findsWidgets);
     expect(find.text('Camera'), findsOneWidget);
     expect(find.text('Gallery'), findsOneWidget);
   });

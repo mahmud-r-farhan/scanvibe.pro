@@ -1,8 +1,8 @@
 name: scanvibe_pro
-description: "ScanVibe: an offline document scanner with on-device OCR and searchable PDF export."
+description: "ScanVibe Pro: Professional offline document scanner with OCR, edge detection, smart filters, and multi-format export."
 publish_to: 'none'
 
-version: 0.0.1+1
+version: 2.0.0+1
 
 environment:
   sdk: ^3.12.2
@@ -15,15 +15,43 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: 0.20.2
-  shared_preferences: ^2.5.5
-  uuid: ^4.5.3
-  collection: ^1.19.1
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Database
+  drift: ^2.23.1
+  sqlite3_flutter_libs: ^0.5.28
+
+  # Routing
+  go_router: ^14.8.1
+
+  # Camera & Image
+  camera: ^0.11.0+2
   image_picker: ^1.2.3
-  path_provider: ^2.1.6
+  image: ^4.5.2
+
+  # OCR
+  google_mlkit_text_recognition: ^0.16.0
+
+  # PDF & Export
   pdf: ^3.13.0
   printing: ^5.15.0
-  google_mlkit_text_recognition: ^0.16.0
+  share_plus: ^10.1.4
+
+  # Utilities
+  uuid: ^4.5.3
+  collection: ^1.19.1
+  path_provider: ^2.1.6
+  path: ^1.9.1
   url_launcher: ^6.3.1
+  permission_handler: ^11.3.1
+  flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  flutter_slidable: ^3.1.1
+  pull_to_refresh: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +59,11 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.4
   flutter_lints: ^6.0.0
+  drift_dev: ^2.23.1
+  build_runner: ^2.4.14
+  riverpod_generator: ^2.6.3
+  custom_lint: ^0.7.5
+  riverpod_lint: ^2.6.3
 
 flutter:
   uses-material-design: true
