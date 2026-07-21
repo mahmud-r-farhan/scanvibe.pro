@@ -1,13 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 
 import '../../../enums.dart';
-import '../../../providers/documents_provider.dart';
 import '../../../services/image_processing_service.dart';
 import '../../../theme/app_colors.dart';
 
@@ -29,7 +27,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
   late String _currentImagePath;
   FilterType _selectedFilter = FilterType.autoEnhance;
   bool _isProcessing = false;
-  bool _hasModified = false;
   int _rotationDegrees = 0;
 
   late final ImageProcessingService _imageService;
@@ -66,7 +63,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       if (mounted) {
         setState(() {
           _currentImagePath = processedPath;
-          _hasModified = true;
         });
       }
     } catch (e) {
@@ -113,7 +109,6 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
         setState(() {
           _currentImagePath = outPath;
           _rotationDegrees = (_rotationDegrees + degrees) % 360;
-          _hasModified = true;
         });
       }
     } catch (e) {
@@ -333,7 +328,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: _filters.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                separatorBuilder: (_, index) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   final filter = _filters[index];
                   final isSelected = filter.type == _selectedFilter;

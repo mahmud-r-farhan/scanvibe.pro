@@ -89,7 +89,7 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () => _showFilterPicker(context, ref),
                   ),
                   _SettingsTile(
-                    icon: Icons.camera_auto_generate,
+                    icon: Icons.camera_enhance_rounded,
                     iconColor: AppColors.success,
                     title: 'Auto-Capture',
                     subtitle: 'Automatically capture when edges are detected',

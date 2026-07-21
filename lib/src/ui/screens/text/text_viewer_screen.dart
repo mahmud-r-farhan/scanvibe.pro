@@ -120,9 +120,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
   }
 
   void _shareText() {
-    SharePlus.instance.share(
-      ShareParams(text: widget.text, subject: widget.title),
-    );
+    Share.share(widget.text, subject: widget.title);
   }
 
   void _editText() {
@@ -473,7 +471,6 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
                 : AppColors.info.withValues(alpha: 0.2),
             color: isCurrentMatch ? Colors.white : null,
             fontWeight: isCurrentMatch ? FontWeight.w800 : FontWeight.w600,
-            borderRadius: BorderRadius.circular(2),
           ),
         ),
       );

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
@@ -276,7 +275,6 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen>
 
   void _renameDocument(String documentId, String currentTitle) {
     final l10n = ScanVibeLocalizations.of(context);
-    final theme = Theme.of(context);
     final controller = TextEditingController(text: currentTitle);
 
     showDialog(

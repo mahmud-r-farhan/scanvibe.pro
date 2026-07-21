@@ -13,7 +13,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final docsState = ref.watch(documentsProvider);
-    final settings = ref.watch(settingsProvider);
+    ref.watch(settingsProvider); // keep listening for theme/locale changes
     final theme = Theme.of(context);
     final l10n = ScanVibeLocalizations.of(context);
 
@@ -52,7 +52,7 @@ class HomeScreen extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            l10n.copyright,
+                            l10n.text('copyright'),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -82,7 +82,7 @@ class HomeScreen extends ConsumerWidget {
                     Expanded(
                       child: _StatCard(
                         icon: Icons.description_outlined,
-                        label: l10n.documents,
+                        label: l10n.text('documents'),
                         value: '${docsState.totalDocuments}',
                         color: AppColors.primaryLight,
                       ),
@@ -91,7 +91,7 @@ class HomeScreen extends ConsumerWidget {
                     Expanded(
                       child: _StatCard(
                         icon: Icons.insert_drive_file_outlined,
-                        label: l10n.pagesLabel,
+                        label: l10n.text('pagesLabel'),
                         value: '${docsState.totalPages}',
                         color: AppColors.secondaryLight,
                       ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Offset;
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -118,8 +119,6 @@ class CameraService {
     await _controller?.setExposurePoint(point);
   }
 
-  Stream<CameraImage>? get imageStream => _controller?.imageStream;
-
   Future<void> dispose() async {
     await _controller?.dispose();
     _controller = null;
@@ -127,11 +126,4 @@ class CameraService {
   }
 }
 
-class CameraException implements Exception {
-  const CameraException(this.code, this.description);
-  final String code;
-  final String description;
 
-  @override
-  String toString() => 'CameraException($code): $description';
-}

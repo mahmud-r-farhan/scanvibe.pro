@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -188,7 +187,7 @@ class DocumentsNotifier extends StateNotifier<DocumentsState> {
           ScanPagesCompanion.insert(
             id: id,
             documentId: documentId,
-            pageIndex: pageIndex,
+            pageIndex: Value(pageIndex),
             imagePath: imagePath,
             thumbnailPath: Value(thumbnailPath),
             createdAt: DateTime.now(),
@@ -250,6 +249,10 @@ class DocumentsNotifier extends StateNotifier<DocumentsState> {
       await deleteDocument(id);
     }
     clearSelection();
+  }
+
+  Future<void> deletePage(String pageId) async {
+    await _db.scanPagesDao.deletePage(pageId);
   }
 
   Future<void> updatePageOcrStatus({
@@ -335,7 +338,7 @@ class DocumentsDao {
   DocumentsDao(this._db);
 
   Stream<List<DocumentWithPages>> watchAllDocuments() {
-    return _db.documentsDao_watchAll();
+    return _db.watchAllDocumentsWithPages();
   }
 
   Future<DocumentWithPages?> getDocument(String id) async {
@@ -395,9 +398,8 @@ class FoldersDao {
   }
 
   Future<int> getDocumentCount(String folderId) async {
-    final count = _db.documents.count();
-    final query = count..where((d) => d.folderId.equals(folderId));
-    return query.getSingle();
+    final list = await (_db.select(_db.documents)..where((d) => d.folderId.equals(folderId))).get();
+    return list.length;
   }
 }
 
@@ -415,7 +417,7 @@ class TagsDao {
     await _db.into(_db.tags).insert(
           TagsCompanion.insert(
             id: id,
-            tagName: name,
+            name: name,
             createdAt: DateTime.now(),
             color: Value(color ?? '#7C3AED'),
           ),
@@ -461,7 +463,7 @@ class ScanPagesDao {
 
 // Helper extension on AppDatabase for watchAllDocuments
 extension AppDatabaseHelpers on AppDatabase {
-  Stream<List<DocumentWithPages>> documentsDao_watchAll() async* {
+  Stream<List<DocumentWithPages>> watchAllDocumentsWithPages() async* {
     final docStream = select(documents).watch();
     await for (final docs in docStream) {
       final results = <DocumentWithPages>[];
@@ -487,7 +489,7 @@ extension AppDatabaseHelpers on AppDatabase {
     return DocumentWithPages(document: doc, pages: pages);
   }
 
-  final _uuid = const Uuid();
+  Uuid get _uuid => const Uuid();
 }
 
 // Provider definition

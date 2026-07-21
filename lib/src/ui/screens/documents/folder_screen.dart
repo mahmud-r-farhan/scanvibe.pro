@@ -15,7 +15,6 @@ class FolderScreen extends ConsumerStatefulWidget {
 }
 
 class _FolderScreenState extends ConsumerState<FolderScreen> {
-  String _searchQuery = '';
   bool _isEditing = false;
   final _titleController = TextEditingController();
 
@@ -28,7 +27,6 @@ class _FolderScreenState extends ConsumerState<FolderScreen> {
   @override
   Widget build(BuildContext context) {
     final docsState = ref.watch(documentsProvider);
-    final theme = Theme.of(context);
 
     final folder = docsState.folders.firstWhere(
       (f) => f.id == widget.folderId,
@@ -37,10 +35,7 @@ class _FolderScreenState extends ConsumerState<FolderScreen> {
 
     final folderDocs = docsState.documents
         .where((d) => d.document.folderId == widget.folderId)
-        .where((d) {
-      if (_searchQuery.isEmpty) return true;
-      return d.document.title.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+        .toList();
 
     return Scaffold(
       appBar: AppBar(

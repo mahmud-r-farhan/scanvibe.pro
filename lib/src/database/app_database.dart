@@ -22,7 +22,7 @@ class Folders extends Table {
 
 class Tags extends Table {
   TextColumn get id => text()();
-  TextColumn get name => text().withCustomName('tag_name')();
+  TextColumn get name => text().named('tag_name')();
   TextColumn get color => text().withDefault(const Constant('#7C3AED'))();
   DateTimeColumn get createdAt => dateTime()();
 
@@ -30,7 +30,7 @@ class Tags extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<Set<Column>> get uniqueKeys => {{name}};
+  List<Set<Column>> get uniqueKeys => [{name}];
 }
 
 class Documents extends Table {
@@ -47,6 +47,7 @@ class Documents extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('ScanPageData')
 class ScanPages extends Table {
   TextColumn get id => text()();
   TextColumn get documentId => text()();

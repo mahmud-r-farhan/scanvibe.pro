@@ -28,7 +28,6 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
 
   bool _isCameraInitialized = false;
   bool _isInitializing = false;
-  bool _hasPermission = false;
   bool _showPermissionDenied = false;
   bool _isCapturing = false;
   bool _isFlashOn = false;
@@ -79,14 +78,11 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
       final status = await Permission.camera.request();
       if (!status.isGranted) {
         setState(() {
-          _hasPermission = false;
           _showPermissionDenied = true;
           _isInitializing = false;
         });
         return;
       }
-
-      _hasPermission = true;
 
       if (_cameraService.isInitialized) {
         await _cameraService.dispose();
@@ -597,7 +593,7 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: ScanMode.values.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          separatorBuilder: (_, index) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
             final mode = ScanMode.values[index];
             final isSelected = mode == _selectedScanMode;
@@ -1069,10 +1065,10 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
                 ...ScanLanguage.values.map(
                   (lang) => ListTile(
                     leading: Icon(
-                      lang == _selectedOcrLanguage
+                      lang.code == _selectedOcrLanguage
                           ? Icons.radio_button_checked
                           : Icons.radio_button_unchecked,
-                      color: lang == _selectedOcrLanguage
+                      color: lang.code == _selectedOcrLanguage
                           ? AppColors.primaryLight
                           : theme.colorScheme.onSurfaceVariant,
                     ),

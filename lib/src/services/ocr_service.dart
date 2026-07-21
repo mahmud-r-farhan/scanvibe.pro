@@ -28,7 +28,7 @@ class OcrService {
   TextRecognizer _getRecognizer(String script) {
     final scriptMap = {
       'latin': TextRecognitionScript.latin,
-      'devanagari': TextRecognitionScript.devanagari,
+      'devanagari': TextRecognitionScript.devanagiri,
       'chinese': TextRecognitionScript.chinese,
       'japanese': TextRecognitionScript.japanese,
       'korean': TextRecognitionScript.korean,
@@ -57,7 +57,7 @@ class OcrService {
       double totalConfidence = 0;
       int blockCount = 0;
       for (final block in recognizedText.blocks) {
-        for (final line in block.lines) {
+        for (final _ in block.lines) {
           blockCount++;
           // ML Kit doesn't provide direct confidence, estimate from text density
           totalConfidence += 0.85; // Default good confidence

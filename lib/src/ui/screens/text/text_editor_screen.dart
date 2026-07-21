@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -435,12 +434,14 @@ class _TextEditorScreenState extends ConsumerState<TextEditorScreen> {
                 : () {
                     if (_hasChanges) {
                       _onWillPop().then((shouldPop) {
-                        if (shouldPop && context.mounted) {
+                        if (shouldPop && context.mounted && mounted) {
                           context.pop();
                         }
                       });
                     } else {
-                      context.pop();
+                      if (context.mounted && mounted) {
+                        context.pop();
+                      }
                     }
                   },
             style: TextButton.styleFrom(

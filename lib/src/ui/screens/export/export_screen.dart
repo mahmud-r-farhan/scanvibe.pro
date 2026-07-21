@@ -8,7 +8,6 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 
 import '../../../providers/documents_provider.dart';
-import '../../../theme/app_colors.dart';
 import '../../../enums.dart';
 
 class ExportScreen extends ConsumerStatefulWidget {
@@ -308,18 +307,27 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
   Future<void> _exportAsPdf(DocumentWithPages docWithPages) async {
     final pdf = pw.Document();
 
+    // Pre-load all image bytes before entering the synchronous PDF widget builder
+    final imageBytesList = <String, pw.MemoryImage>{};
+    for (final page in docWithPages.pages) {
+      if (page.imagePath.isNotEmpty && File(page.imagePath).existsSync()) {
+        try {
+          final bytes = await File(page.imagePath).readAsBytes();
+          imageBytesList[page.imagePath] = pw.MemoryImage(bytes);
+        } catch (_) {}
+      }
+    }
+
     for (final page in docWithPages.pages) {
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
           build: (context) => pw.Column(
             children: [
-              if (page.imagePath.isNotEmpty)
+              if (page.imagePath.isNotEmpty && imageBytesList.containsKey(page.imagePath))
                 pw.Expanded(
                   child: pw.Image(
-                    pw.MemoryImage(
-                      await File(page.imagePath).readAsBytes(),
-                    ),
+                    imageBytesList[page.imagePath]!,
                     fit: pw.BoxFit.contain,
                   ),
                 ),
@@ -346,8 +354,9 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
     final file = File('${tempDir.path}/${docWithPages.document.title}.txt');
     await file.writeAsString(text);
 
-    await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)]),
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      subject: docWithPages.document.title,
     );
   }
 
@@ -360,8 +369,9 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
     }
 
     if (files.isNotEmpty) {
-      await SharePlus.instance.share(
-        ShareParams(files: files),
+      await Share.shareXFiles(
+        files,
+        subject: docWithPages.document.title,
       );
     }
   }

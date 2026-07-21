@@ -39,7 +39,7 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
 
     final docWithPages = docsState.documents.firstWhere(
       (d) => d.document.id == widget.documentId,
-      orElse() => throw Exception('Document not found'),
+      orElse: () => throw Exception('Document not found'),
     );
 
     final doc = docWithPages.document;

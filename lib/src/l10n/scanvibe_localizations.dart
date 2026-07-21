@@ -149,8 +149,6 @@ class ScanVibeLocalizations {
       'browseFolders': 'Browse Folders',
       'scanQrCode': 'Scan QR Code',
       'pending': 'Pending',
-      'documents': 'Documents',
-      'pagesLabel': 'Pages',
       'upgradeToPro': 'Upgrade to Pro',
       'unlockAllFeatures': 'Unlock all features',
       // Scan modes

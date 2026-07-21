@@ -55,8 +55,8 @@ class ImageProcessingService {
 
     // Calculate histogram
     final histogram = List.filled(256, 0);
-    for (final pixel in gray.data) {
-      histogram[pixel]++;
+    for (final pixel in gray) {
+      histogram[pixel.r.toInt()]++;
     }
 
     // Calculate CDF
@@ -158,11 +158,12 @@ class ImageProcessingService {
     final gray = img.grayscale(image);
 
     // Boost contrast
-    final minVal = 255;
-    final maxVal = 0;
-    for (final pixel in gray.data) {
-      if (pixel < minVal) (minVal as dynamic);
-      if (pixel > maxVal) (maxVal as dynamic);
+    var minVal = 255;
+    var maxVal = 0;
+    for (final pixel in gray) {
+      final val = pixel.r.toInt();
+      if (val < minVal) minVal = val;
+      if (val > maxVal) maxVal = val;
     }
 
     final range = maxVal - minVal;
@@ -189,19 +190,23 @@ class ImageProcessingService {
         final pixel = image.getPixel(x, y);
 
         // Convert to HSL
-        final hsl = img.hslColorFromRgb(
+        final hsl = img.rgbToHsl(
           pixel.r.toInt(),
           pixel.g.toInt(),
           pixel.b.toInt(),
         );
+        final h = hsl[0];
+        final s = hsl[1];
+        final l = hsl[2];
 
         // Boost saturation by 30%
-        final newSat = (hsl.saturation * 1.3).clamp(0.0, 1.0);
+        final newSat = (s * 1.3).clamp(0.0, 1.0);
         // Boost lightness slightly
-        final newLit = (hsl.lightness * 1.05).clamp(0.0, 1.0);
+        final newLit = (l * 1.05).clamp(0.0, 1.0);
 
-        final rgb = img.rgbFromHsl(hsl.hue, newSat, newLit);
-        result.setPixelRgb(x, y, rgb[0], rgb[1], rgb[2]);
+        final rgbOut = [0, 0, 0];
+        img.hslToRgb(h, newSat, newLit, rgbOut);
+        result.setPixelRgb(x, y, rgbOut[0], rgbOut[1], rgbOut[2]);
       }
     }
 

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,7 +20,7 @@ import 'ui/screens/premium/premium_screen.dart';
 import 'providers/settings_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final settings = ref.watch(settingsProvider);
+  ref.watch(settingsProvider); // keep router reactive to settings changes
 
   return GoRouter(
     initialLocation: '/',

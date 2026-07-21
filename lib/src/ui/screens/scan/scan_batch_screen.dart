@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-import '../../../enums.dart';
+import '../../../database/app_database.dart';
 import '../../../providers/documents_provider.dart';
 import '../../../theme/app_colors.dart';
 
@@ -177,8 +177,7 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
               color: AppColors.ocrFailed,
             ),
           const Spacer(),
-          if (doc.document.updatedAt != null)
-            Text(
+          Text(
               _formatDate(doc.document.updatedAt),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -258,11 +257,11 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     );
   }
 
-  Widget _buildPageGrid(ThemeData theme, List pages) {
+  Widget _buildPageGrid(ThemeData theme, List<ScanPageData> pages) {
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: pages.length,
-      onReorder: (oldIndex, newIndex) => _reorderPages(pages, oldIndex, newIndex),
+      onReorderItem: (oldIndex, newIndex) => _reorderPages(pages, oldIndex, newIndex),
       itemBuilder: (context, index) {
         final page = pages[index];
         final isSelected = _selectedPageIds.contains(page.id);
@@ -640,19 +639,19 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     });
   }
 
-  void _selectAllPages(List pages) {
+  void _selectAllPages(List<ScanPageData> pages) {
     setState(() {
       _selectedPageIds = pages.map((p) => p.id).toSet();
     });
   }
 
-  void _reorderPages(List pages, int oldIndex, int newIndex) {
+  void _reorderPages(List<ScanPageData> pages, int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex--;
     final pageIds = pages.map((p) => p.id).toList();
     final item = pageIds.removeAt(oldIndex);
     pageIds.insert(newIndex, item);
 
-    ref.read(documentsProvider.notifier).reorderPages(widget.documentId, pageIds);
+    ref.read(documentsProvider.notifier).reorderPages(widget.documentId, List<String>.from(pageIds));
   }
 
   void _viewPage(dynamic page) {
@@ -731,7 +730,7 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
   }
 
   Future<void> _deletePage(String pageId) async {
-    await ref.read(documentsProvider.notifier).scanPagesDao.deletePage(pageId);
+    await ref.read(documentsProvider.notifier).deletePage(pageId);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -871,9 +870,22 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     }
   }
 
+  final Map<String, pw.MemoryImage> _pdfImages = {};
+
   Future<pw.Document> _generatePdf(DocumentWithPages doc) async {
-    // Import pdf package inline since it's in pubspec
     final pdf = pw.Document();
+
+    // Pre-load all page images before building the PDF widget tree
+    _pdfImages.clear();
+    for (final page in doc.pages) {
+      final path = page.imagePath;
+      if (path.isNotEmpty && File(path).existsSync()) {
+        try {
+          final bytes = await File(path).readAsBytes();
+          _pdfImages[path] = pw.MemoryImage(bytes);
+        } catch (_) {}
+      }
+    }
 
     for (var i = 0; i < doc.pages.length; i++) {
       final page = doc.pages[i];
@@ -893,17 +905,9 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
                   ),
                 ),
                 pw.SizedBox(height: 12),
-                if (File(imagePath).existsSync())
+                if (File(imagePath).existsSync() && _pdfImages.containsKey(imagePath))
                   pw.Expanded(
-                    child: pw.FutureBuilder<pw.Image?>(
-                      future: _loadPdfImage(imagePath),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data != null) {
-                          return pw.Image(snapshot.data!, fit: pw.BoxFit.contain);
-                        }
-                        return const pw.Text('Loading image...');
-                      },
-                    ),
+                    child: pw.Image(_pdfImages[imagePath]!, fit: pw.BoxFit.contain),
                   ),
                 if (page.extractedText != null &&
                     page.extractedText!.isNotEmpty) ...[
@@ -920,16 +924,6 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     return pdf;
   }
 
-  Future<pw.Image?> _loadPdfImage(String imagePath) async {
-    try {
-      final file = File(imagePath);
-      if (!await file.exists()) return null;
-      final bytes = await file.readAsBytes();
-      return pw.Image(pw.MemoryImage(bytes));
-    } catch (_) {
-      return null;
-    }
-  }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();

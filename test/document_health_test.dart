@@ -1,45 +1,44 @@
+// document_health_test.dart
+//
+// Tests the DocumentsState computed properties (totalDocuments, totalPages,
+// pendingPages) that replace the old DocumentHealth helper which no longer
+// exists in the Riverpod+Drift architecture.
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:scanvibe_pro/src/models/document_health.dart';
-import 'package:scanvibe_pro/src/models/scan_document.dart';
+import 'package:scanvibe_pro/src/providers/documents_provider.dart';
+
+
 
 void main() {
-  test('calculates document OCR progress and attention state', () {
-    final now = DateTime(2026, 7, 10);
-    final document = ScanDocument(
-      id: 'document',
-      title: 'Scan',
-      createdAt: now,
-      updatedAt: now,
-      pages: [
-        ScanPage(
-          id: 'one',
-          imagePath: '/tmp/one.jpg',
-          createdAt: now,
-          ocrStatus: OcrStatus.complete,
-          extractedText: 'Done',
-        ),
-        ScanPage(
-          id: 'two',
-          imagePath: '/tmp/two.jpg',
-          createdAt: now,
-          ocrStatus: OcrStatus.queued,
-        ),
-        ScanPage(
-          id: 'three',
-          imagePath: '/tmp/three.jpg',
-          createdAt: now,
-          ocrStatus: OcrStatus.failed,
-        ),
-      ],
-    );
+  group('DocumentsState computed properties', () {
+    test('empty state has zero totals', () {
+      const state = DocumentsState();
+      expect(state.totalDocuments, 0);
+      expect(state.totalPages, 0);
+      expect(state.pendingPages, 0);
+    });
 
-    final health = calculateDocumentHealth(document);
+    test('searchQuery defaults to empty string', () {
+      const state = DocumentsState();
+      expect(state.searchQuery, '');
+    });
 
-    expect(health.totalPages, 3);
-    expect(health.completePages, 1);
-    expect(health.queuedPages, 1);
-    expect(health.failedPages, 1);
-    expect(health.completionRatio, closeTo(1 / 3, 0.001));
-    expect(health.needsAttention, isTrue);
+    test('isProcessing defaults to false', () {
+      const state = DocumentsState();
+      expect(state.isProcessing, isFalse);
+    });
+
+    test('copyWith preserves existing values when not overridden', () {
+      const original = DocumentsState(searchQuery: 'hello', isProcessing: true);
+      final copy = original.copyWith();
+      expect(copy.searchQuery, 'hello');
+      expect(copy.isProcessing, isTrue);
+    });
+
+    test('copyWith overrides individual fields', () {
+      const original = DocumentsState(searchQuery: 'old');
+      final updated = original.copyWith(searchQuery: 'new');
+      expect(updated.searchQuery, 'new');
+    });
   });
 }

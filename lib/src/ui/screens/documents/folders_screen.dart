@@ -35,9 +35,7 @@ class _FoldersScreenState extends ConsumerState<FoldersScreen> {
     return Color(int.parse('FF${buffer.toString()}', radix: 16));
   }
 
-  String _colorToHex(Color color) {
-    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
-  }
+
 
   IconData _folderIcon(String iconName) {
     switch (iconName) {
