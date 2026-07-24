@@ -93,33 +93,38 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                ...SortField.values.map((field) {
-                  final isSelected = state.sortField == field;
-                  return RadioListTile<SortField>(
-                    value: field,
-                    groupValue: state.sortField,
-                    onChanged: (value) {
-                      if (value != null) {
-                        ref.read(documentsProvider.notifier).setSortField(value);
-                      }
-                      Navigator.of(ctx).pop();
-                    },
-                    title: Text(
-                      _sortFieldLabel(field, l10n),
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      ),
-                    ),
-                    secondary: Icon(
-                      isSelected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
-                      color: isSelected ? AppColors.primaryLight : null,
-                      size: 20,
-                    ),
-                    activeColor: AppColors.primaryLight,
-                  );
-                }),
+                RadioGroup<SortField>(
+                  groupValue: state.sortField,
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(documentsProvider.notifier).setSortField(value);
+                    }
+                    Navigator.of(ctx).pop();
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: SortField.values.map((field) {
+                      final isSelected = state.sortField == field;
+                      return RadioListTile<SortField>(
+                        value: field,
+                        title: Text(
+                          _sortFieldLabel(field, l10n),
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
+                        secondary: Icon(
+                          isSelected
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                          color: isSelected ? AppColors.primaryLight : null,
+                          size: 20,
+                        ),
+                        activeColor: AppColors.primaryLight,
+                      );
+                    }).toList(),
+                  ),
+                ),
                 const Divider(indent: 16, endIndent: 16),
                 ListTile(
                   leading: Icon(
