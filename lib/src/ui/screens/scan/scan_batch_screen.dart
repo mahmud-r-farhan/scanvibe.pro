@@ -9,6 +9,8 @@ import 'package:printing/printing.dart';
 
 import '../../../database/app_database.dart';
 import '../../../providers/documents_provider.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../services/ocr_service.dart';
 import '../../../theme/app_colors.dart';
 
 class ScanBatchScreen extends ConsumerStatefulWidget {
@@ -434,6 +436,18 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
                           ],
                         ),
                       ),
+                      PopupMenuItem(
+                        value: 'ocr',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.document_scanner_outlined, size: 18),
+                            const SizedBox(width: 10),
+                            Text(page.ocrStatus == 'complete'
+                                ? 'Re-run OCR'
+                                : 'Run OCR'),
+                          ],
+                        ),
+                      ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Row(
@@ -451,6 +465,8 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
                       switch (value) {
                         case 'view':
                           _viewPage(page);
+                        case 'ocr':
+                          _runSinglePageOcr(page);
                         case 'delete':
                           _confirmDeletePage(context, page);
                       }
@@ -773,7 +789,9 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
         return;
       }
 
-      // Import OcrService inline to process pages
+      final ocrService = ref.read(ocrServiceProvider);
+      final ocrLanguage = ref.read(settingsProvider).ocrLanguage;
+
       for (final page in queuedPages) {
         await ref.read(documentsProvider.notifier).updatePageOcrStatus(
               pageId: page.id,
@@ -781,13 +799,18 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
             );
 
         try {
-          // Use a simulated OCR result since the service may not be available
-          // In production, inject OcrService via provider
+          if (!File(page.imagePath).existsSync()) {
+            throw Exception('Page image file does not exist');
+          }
+          final result = await ocrService.extractText(
+            imagePath: page.imagePath,
+            languageHint: ocrLanguage,
+          );
           await ref.read(documentsProvider.notifier).updatePageOcrStatus(
                 pageId: page.id,
                 status: 'complete',
-                extractedText: 'OCR processed for page ${page.pageIndex + 1}',
-                confidence: 0.85,
+                extractedText: result.text.isNotEmpty ? result.text : null,
+                confidence: result.confidence,
               );
         } catch (e) {
           await ref.read(documentsProvider.notifier).updatePageOcrStatus(
@@ -813,6 +836,57 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     } finally {
       if (mounted) {
         setState(() => _isProcessingOcr = false);
+      }
+    }
+  }
+
+  Future<void> _runSinglePageOcr(ScanPageData page) async {
+    final ocrService = ref.read(ocrServiceProvider);
+    final ocrLanguage = ref.read(settingsProvider).ocrLanguage;
+
+    await ref.read(documentsProvider.notifier).updatePageOcrStatus(
+          pageId: page.id,
+          status: 'processing',
+        );
+
+    try {
+      if (!File(page.imagePath).existsSync()) {
+        throw Exception('Page image file does not exist');
+      }
+      final result = await ocrService.extractText(
+        imagePath: page.imagePath,
+        languageHint: ocrLanguage,
+      );
+      await ref.read(documentsProvider.notifier).updatePageOcrStatus(
+            pageId: page.id,
+            status: 'complete',
+            extractedText: result.text.isNotEmpty ? result.text : null,
+            confidence: result.confidence,
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Page ${page.pageIndex + 1} OCR complete'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      await ref.read(documentsProvider.notifier).updatePageOcrStatus(
+            pageId: page.id,
+            status: 'failed',
+            errorMessage: e.toString(),
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('OCR failed: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }

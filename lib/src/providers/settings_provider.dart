@@ -14,6 +14,8 @@ class SettingsState {
     this.autoProcessOcr = true,
     this.imageQuality = 0.92,
     this.maxImageWidth = 2200,
+    this.isPro = false,
+    this.pdfWatermark = true,
   });
 
   final Locale locale;
@@ -26,8 +28,13 @@ class SettingsState {
   final bool autoProcessOcr;
   final double imageQuality;
   final int maxImageWidth;
+  final bool isPro;
+  final bool pdfWatermark;
 
   ThemeMode get themeMode => isDarkMode ? ThemeMode.dark : ThemeMode.light;
+
+  /// Effective watermark status: if pro, user can turn watermark off; free users always have watermark
+  bool get shouldIncludeWatermark => isPro ? pdfWatermark : true;
 
   SettingsState copyWith({
     Locale? locale,
@@ -40,6 +47,8 @@ class SettingsState {
     bool? autoProcessOcr,
     double? imageQuality,
     int? maxImageWidth,
+    bool? isPro,
+    bool? pdfWatermark,
   }) {
     return SettingsState(
       locale: locale ?? this.locale,
@@ -52,6 +61,8 @@ class SettingsState {
       autoProcessOcr: autoProcessOcr ?? this.autoProcessOcr,
       imageQuality: imageQuality ?? this.imageQuality,
       maxImageWidth: maxImageWidth ?? this.maxImageWidth,
+      isPro: isPro ?? this.isPro,
+      pdfWatermark: pdfWatermark ?? this.pdfWatermark,
     );
   }
 }
@@ -73,6 +84,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final filter = prefs.getString('${_prefix}filter') ?? 'auto_enhance';
     final autoCapture = prefs.getBool('${_prefix}auto_capture') ?? true;
     final autoOcr = prefs.getBool('${_prefix}auto_process_ocr') ?? true;
+    final isPro = prefs.getBool('${_prefix}is_pro') ?? false;
+    final quality = prefs.getDouble('${_prefix}image_quality') ?? 0.92;
+    final watermark = prefs.getBool('${_prefix}pdf_watermark') ?? true;
 
     state = SettingsState(
       locale: Locale(localeCode),
@@ -83,6 +97,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       defaultFilter: filter,
       autoCapture: autoCapture,
       autoProcessOcr: autoOcr,
+      isPro: isPro,
+      imageQuality: quality,
+      pdfWatermark: watermark,
     );
   }
 
@@ -132,6 +149,24 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(autoProcessOcr: value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('${_prefix}auto_process_ocr', value);
+  }
+
+  Future<void> setProStatus(bool value) async {
+    state = state.copyWith(isPro: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('${_prefix}is_pro', value);
+  }
+
+  Future<void> setImageQuality(double quality) async {
+    state = state.copyWith(imageQuality: quality);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('${_prefix}image_quality', quality);
+  }
+
+  Future<void> setPdfWatermark(bool value) async {
+    state = state.copyWith(pdfWatermark: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('${_prefix}pdf_watermark', value);
   }
 }
 

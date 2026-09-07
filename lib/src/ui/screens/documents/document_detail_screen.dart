@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../providers/documents_provider.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../services/ocr_service.dart';
 import '../../../theme/app_colors.dart';
 
 class DocumentDetailScreen extends ConsumerStatefulWidget {
@@ -37,10 +42,13 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     final docsState = ref.watch(documentsProvider);
     final theme = Theme.of(context);
 
-    final docWithPages = docsState.documents.firstWhere(
-      (d) => d.document.id == widget.documentId,
-      orElse: () => throw Exception('Document not found'),
-    );
+    final docWithPages = docsState.getDocumentById(widget.documentId);
+    if (docWithPages == null) {
+      return Scaffold(
+        appBar: AppBar(leading: const BackButton()),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     final doc = docWithPages.document;
     final pages = docWithPages.pages;
@@ -107,6 +115,16 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
                 ),
               ),
               const PopupMenuItem(
+                value: 'add_page',
+                child: Row(
+                  children: [
+                    Icon(Icons.add_photo_alternate_outlined, size: 20),
+                    SizedBox(width: 8),
+                    Text('Add Page'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
@@ -120,6 +138,8 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
             onSelected: (value) {
               if (value == 'rename') {
                 setState(() => _isEditingTitle = true);
+              } else if (value == 'add_page') {
+                _addPageFromGallery();
               } else if (value == 'delete') {
                 _showDeleteConfirmation(context);
               }
@@ -403,10 +423,95 @@ class _DocumentDetailScreenState extends ConsumerState<DocumentDetailScreen> {
     );
   }
 
-  void _retryOcr() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Retrying OCR processing...')),
-    );
+  Future<void> _retryOcr() async {
+    final docsState = ref.read(documentsProvider);
+    final docWithPages = docsState.getDocumentById(widget.documentId);
+    if (docWithPages == null) return;
+
+    final queuedPages = docWithPages.pages
+        .where((p) => p.ocrStatus == 'queued' || p.ocrStatus == 'failed')
+        .toList();
+
+    if (queuedPages.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All pages are already processed')),
+        );
+      }
+      return;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Processing OCR for ${queuedPages.length} pages...')),
+      );
+    }
+
+    final ocrService = ref.read(ocrServiceProvider);
+    final ocrLanguage = ref.read(settingsProvider).ocrLanguage;
+
+    for (final page in queuedPages) {
+      await ref.read(documentsProvider.notifier).updatePageOcrStatus(
+            pageId: page.id,
+            status: 'processing',
+          );
+      try {
+        if (!File(page.imagePath).existsSync()) {
+          throw Exception('Image file missing');
+        }
+        final result = await ocrService.extractText(
+          imagePath: page.imagePath,
+          languageHint: ocrLanguage,
+        );
+        await ref.read(documentsProvider.notifier).updatePageOcrStatus(
+              pageId: page.id,
+              status: 'complete',
+              extractedText: result.text.isNotEmpty ? result.text : null,
+              confidence: result.confidence,
+            );
+      } catch (e) {
+        await ref.read(documentsProvider.notifier).updatePageOcrStatus(
+              pageId: page.id,
+              status: 'failed',
+              errorMessage: e.toString(),
+            );
+      }
+    }
+  }
+
+  Future<void> _addPageFromGallery() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 92);
+    if (image == null) return;
+
+    final pageId = await ref.read(documentsProvider.notifier).addPageToDocument(
+          documentId: widget.documentId,
+          imagePath: image.path,
+          filterType: 'auto_enhance',
+        );
+
+    if (ref.read(settingsProvider).autoProcessOcr) {
+      final ocrService = ref.read(ocrServiceProvider);
+      final ocrLanguage = ref.read(settingsProvider).ocrLanguage;
+      ref.read(documentsProvider.notifier).updatePageOcrStatus(
+            pageId: pageId,
+            status: 'processing',
+          );
+      ocrService.extractText(imagePath: image.path, languageHint: ocrLanguage).then((res) {
+        ref.read(documentsProvider.notifier).updatePageOcrStatus(
+              pageId: pageId,
+              status: 'complete',
+              extractedText: res.text.isNotEmpty ? res.text : null,
+              confidence: res.confidence,
+            );
+      }).catchError((err) {
+        ref.read(documentsProvider.notifier).updatePageOcrStatus(
+              pageId: pageId,
+              status: 'failed',
+              errorMessage: err.toString(),
+            );
+      });
+    }
   }
 }
 

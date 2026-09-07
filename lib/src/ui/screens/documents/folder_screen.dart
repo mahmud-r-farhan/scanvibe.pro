@@ -28,10 +28,14 @@ class _FolderScreenState extends ConsumerState<FolderScreen> {
   Widget build(BuildContext context) {
     final docsState = ref.watch(documentsProvider);
 
-    final folder = docsState.folders.firstWhere(
-      (f) => f.id == widget.folderId,
-      orElse: () => throw Exception('Folder not found'),
-    );
+    final folderIndex = docsState.folders.indexWhere((f) => f.id == widget.folderId);
+    if (folderIndex == -1) {
+      return Scaffold(
+        appBar: AppBar(leading: const BackButton()),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    final folder = docsState.folders[folderIndex];
 
     final folderDocs = docsState.documents
         .where((d) => d.document.folderId == widget.folderId)

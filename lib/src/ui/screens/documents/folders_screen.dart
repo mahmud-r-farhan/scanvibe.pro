@@ -29,10 +29,20 @@ class _FoldersScreenState extends ConsumerState<FoldersScreen> {
   ];
 
   Color _hexToColor(String hex) {
-    final buffer = StringBuffer();
-    if (hex.length == 7) buffer.write(hex.substring(1));
-    if (hex.length == 9) buffer.write(hex.substring(3));
-    return Color(int.parse('FF${buffer.toString()}', radix: 16));
+    try {
+      var clean = hex.trim();
+      if (clean.startsWith('#')) {
+        clean = clean.substring(1);
+      }
+      if (clean.length == 6) {
+        clean = 'FF$clean';
+      } else if (clean.length != 8) {
+        return const Color(0xFF0F766E);
+      }
+      return Color(int.parse(clean, radix: 16));
+    } catch (_) {
+      return const Color(0xFF0F766E);
+    }
   }
 
 

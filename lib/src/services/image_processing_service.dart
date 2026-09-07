@@ -1,55 +1,85 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 import '../enums.dart';
 
 class ImageProcessingService {
-  ImageProcessingService();
+  const ImageProcessingService();
 
   Future<String> processImage({
     required String inputPath,
     required FilterType filter,
     String? outputPath,
   }) async {
-    final bytes = await File(inputPath).readAsBytes();
-    var image = img.decodeImage(bytes);
-    if (image == null) throw Exception('Failed to decode image');
+    final dir = p.dirname(inputPath);
+    final baseName = p.basenameWithoutExtension(inputPath);
+    final outPath = outputPath ?? p.join(dir, '${baseName}_${filter.name}.jpg');
 
-    // Resize if too large
-    if (image.width > 2200) {
-      final ratio = 2200 / image.width;
-      image = img.copyResize(
-        image,
-        width: 2200,
-        height: (image.height * ratio).round(),
-        interpolation: img.Interpolation.linear,
-      );
-    }
+    await Isolate.run(() async {
+      final bytes = await File(inputPath).readAsBytes();
+      var image = img.decodeImage(bytes);
+      if (image == null) throw Exception('Failed to decode image');
 
-    // Apply filter
-    switch (filter) {
-      case FilterType.autoEnhance:
-        image = _autoEnhance(image);
-      case FilterType.blackWhite:
-        image = _blackAndWhite(image);
-      case FilterType.grayscale:
-        image = _grayscale(image);
-      case FilterType.magicColor:
-        image = _magicColor(image);
-      case FilterType.sharpen:
-        image = _sharpen(image);
-      case FilterType.clean:
-        image = _clean(image);
-    }
+      // Resize if too large
+      if (image.width > 2200) {
+        final ratio = 2200 / image.width;
+        image = img.copyResize(
+          image,
+          width: 2200,
+          height: (image.height * ratio).round(),
+          interpolation: img.Interpolation.linear,
+        );
+      }
 
-    // Save output
-    final outPath = outputPath ?? inputPath.replaceAll('.jpg', '_processed.jpg');
-    await File(outPath).writeAsBytes(img.encodeJpg(image, quality: 92));
+      // Apply filter
+      switch (filter) {
+        case FilterType.autoEnhance:
+          image = _autoEnhance(image);
+        case FilterType.blackWhite:
+          image = _blackAndWhite(image);
+        case FilterType.grayscale:
+          image = _grayscale(image);
+        case FilterType.magicColor:
+          image = _magicColor(image);
+        case FilterType.sharpen:
+          image = _sharpen(image);
+        case FilterType.clean:
+          image = _clean(image);
+      }
+
+      await File(outPath).writeAsBytes(img.encodeJpg(image, quality: 92));
+    });
+
     return outPath;
   }
 
-  img.Image _autoEnhance(img.Image image) {
+  Future<String> rotateImage({
+    required String inputPath,
+    required int degrees,
+    String? outputPath,
+  }) async {
+    final dir = p.dirname(inputPath);
+    final baseName = p.basenameWithoutExtension(inputPath);
+    final outPath = outputPath ??
+        p.join(dir, '${baseName}_rotated_${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+    await Isolate.run(() async {
+      final bytes = await File(inputPath).readAsBytes();
+      var image = img.decodeImage(bytes);
+      if (image == null) throw Exception('Failed to decode image');
+
+      image = img.copyRotate(image, angle: degrees);
+      await File(outPath).writeAsBytes(img.encodeJpg(image, quality: 92));
+    });
+
+    return outPath;
+  }
+
+  static img.Image _autoEnhance(img.Image image) {
     // Adaptive histogram equalization approximation
     final gray = img.grayscale(image);
 
@@ -92,7 +122,7 @@ class ImageProcessingService {
     return _applySharpenKernel(result);
   }
 
-  img.Image _blackAndWhite(img.Image image) {
+  static img.Image _blackAndWhite(img.Image image) {
     // Sauvola-like adaptive thresholding
     final gray = img.grayscale(image);
     final result = img.Image(width: image.width, height: image.height);
@@ -154,7 +184,7 @@ class ImageProcessingService {
     return result;
   }
 
-  img.Image _grayscale(img.Image image) {
+  static img.Image _grayscale(img.Image image) {
     final gray = img.grayscale(image);
 
     // Boost contrast
@@ -181,7 +211,7 @@ class ImageProcessingService {
     return result;
   }
 
-  img.Image _magicColor(img.Image image) {
+  static img.Image _magicColor(img.Image image) {
     // Boost saturation and contrast
     final result = img.Image(width: image.width, height: image.height);
 
@@ -213,11 +243,11 @@ class ImageProcessingService {
     return _applySharpenKernel(result);
   }
 
-  img.Image _sharpen(img.Image image) {
+  static img.Image _sharpen(img.Image image) {
     return _applySharpenKernel(image);
   }
 
-  img.Image _clean(img.Image image) {
+  static img.Image _clean(img.Image image) {
     // Morphological opening (erosion then dilation) to remove small noise
     var result = _morphologicalErode(image, 1);
     result = _morphologicalDilate(result, 1);
@@ -226,7 +256,7 @@ class ImageProcessingService {
     return _autoEnhance(result);
   }
 
-  img.Image _applySharpenKernel(img.Image image) {
+  static img.Image _applySharpenKernel(img.Image image) {
     // Unsharp mask kernel
     final kernel = [
       [0, -1, 0],
@@ -237,7 +267,7 @@ class ImageProcessingService {
     return _applyConvolution(image, kernel);
   }
 
-  img.Image _applyConvolution(img.Image image, List<List<int>> kernel) {
+  static img.Image _applyConvolution(img.Image image, List<List<int>> kernel) {
     final result = img.Image(width: image.width, height: image.height);
     final kSize = kernel.length;
     final kHalf = kSize ~/ 2;
@@ -271,7 +301,7 @@ class ImageProcessingService {
     return result;
   }
 
-  img.Image _morphologicalErode(img.Image image, int radius) {
+  static img.Image _morphologicalErode(img.Image image, int radius) {
     final result = img.Image(width: image.width, height: image.height);
     final gray = img.grayscale(image);
 
@@ -301,7 +331,7 @@ class ImageProcessingService {
     return result;
   }
 
-  img.Image _morphologicalDilate(img.Image image, int radius) {
+  static img.Image _morphologicalDilate(img.Image image, int radius) {
     final result = img.Image(width: image.width, height: image.height);
     final gray = img.grayscale(image);
 
@@ -336,17 +366,23 @@ class ImageProcessingService {
     int maxWidth = 200,
     int maxHeight = 200,
   }) async {
-    final bytes = await File(imagePath).readAsBytes();
-    var image = img.decodeImage(bytes);
-    if (image == null) throw Exception('Failed to decode image for thumbnail');
+    return Isolate.run(() async {
+      final bytes = await File(imagePath).readAsBytes();
+      var image = img.decodeImage(bytes);
+      if (image == null) throw Exception('Failed to decode image for thumbnail');
 
-    image = img.copyResize(
-      image,
-      width: maxWidth,
-      height: maxHeight,
-      interpolation: img.Interpolation.linear,
-    );
+      image = img.copyResize(
+        image,
+        width: maxWidth,
+        height: maxHeight,
+        interpolation: img.Interpolation.linear,
+      );
 
-    return Uint8List.fromList(img.encodeJpg(image, quality: 80));
+      return Uint8List.fromList(img.encodeJpg(image, quality: 80));
+    });
   }
 }
+
+final imageProcessingServiceProvider = Provider<ImageProcessingService>((ref) {
+  return const ImageProcessingService();
+});

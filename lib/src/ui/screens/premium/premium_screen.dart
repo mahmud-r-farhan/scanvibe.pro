@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../providers/settings_provider.dart';
 import '../../../theme/app_colors.dart';
 
 class PremiumScreen extends ConsumerStatefulWidget {
@@ -86,9 +87,9 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     description: 'Clean exports without branding',
                   ),
                   _PremiumFeature(
-                    icon: Icons.cloud_sync_rounded,
-                    title: 'Cloud Sync',
-                    description: 'Sync across all your devices',
+                    icon: Icons.security_rounded,
+                    title: '100% Private & Offline',
+                    description: 'All scans and OCR stay securely on your device',
                   ),
                   _PremiumFeature(
                     icon: Icons.support_agent_rounded,
@@ -135,7 +136,17 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
 
                   // Restore purchases
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      await ref.read(settingsProvider.notifier).setProStatus(true);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Pro access restored successfully!'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                      }
+                    },
                     child: const Text('Restore Purchases'),
                   ),
                 ],
@@ -152,8 +163,17 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                   width: double.infinity,
                   height: 56,
                   child: FilledButton(
-                    onPressed: () {
-                      // Subscribe logic
+                    onPressed: () async {
+                      await ref.read(settingsProvider.notifier).setProStatus(true);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Welcome to ScanVibe Pro! All features unlocked.'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
                     },
                     style: FilledButton.styleFrom(
                       shape: RoundedRectangleBorder(

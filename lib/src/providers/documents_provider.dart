@@ -68,6 +68,11 @@ class DocumentsState {
           sum +
           doc.pages.where((p) => p.ocrStatus == 'queued').length);
 
+  DocumentWithPages? getDocumentById(String id) {
+    final idx = documents.indexWhere((d) => d.document.id == id);
+    return idx != -1 ? documents[idx] : null;
+  }
+
   DocumentsState copyWith({
     List<DocumentWithPages>? documents,
     List<Folder>? folders,
@@ -211,6 +216,14 @@ class DocumentsNotifier extends StateNotifier<DocumentsState> {
     ));
   }
 
+  Future<void> updateDocumentNote(String documentId, String note) async {
+    await (_db.update(_db.documents)..where((d) => d.id.equals(documentId)))
+        .write(DocumentsCompanion(
+      note: Value(note),
+      updatedAt: Value(DateTime.now()),
+    ));
+  }
+
   Future<void> toggleFavorite(String documentId) async {
     final doc = await (_db.select(_db.documents)
           ..where((d) => d.id.equals(documentId)))
@@ -252,7 +265,14 @@ class DocumentsNotifier extends StateNotifier<DocumentsState> {
   }
 
   Future<void> deletePage(String pageId) async {
+    final page = await _db.scanPagesDao.getPage(pageId);
     await _db.scanPagesDao.deletePage(pageId);
+    if (page != null) {
+      await (_db.update(_db.documents)..where((d) => d.id.equals(page.documentId)))
+          .write(DocumentsCompanion(
+        updatedAt: Value(DateTime.now()),
+      ));
+    }
   }
 
   Future<void> updatePageOcrStatus({
@@ -269,6 +289,13 @@ class DocumentsNotifier extends StateNotifier<DocumentsState> {
       confidence: Value(confidence),
       errorMessage: Value(errorMessage),
     ));
+    final page = await _db.scanPagesDao.getPage(pageId);
+    if (page != null) {
+      await (_db.update(_db.documents)..where((d) => d.id.equals(page.documentId)))
+          .write(DocumentsCompanion(
+        updatedAt: Value(DateTime.now()),
+      ));
+    }
   }
 
   Future<void> updatePageFilter({
@@ -279,6 +306,13 @@ class DocumentsNotifier extends StateNotifier<DocumentsState> {
         .write(ScanPagesCompanion(
       filterType: Value(filterType),
     ));
+    final page = await _db.scanPagesDao.getPage(pageId);
+    if (page != null) {
+      await (_db.update(_db.documents)..where((d) => d.id.equals(page.documentId)))
+          .write(DocumentsCompanion(
+        updatedAt: Value(DateTime.now()),
+      ));
+    }
   }
 
   Future<void> reorderPages(String documentId, List<String> pageIds) async {

@@ -1,14 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
 
-import '../../../providers/documents_provider.dart';
 import '../../../enums.dart';
+import '../../../providers/documents_provider.dart';
+import '../../../providers/settings_provider.dart';
+import '../../../theme/app_colors.dart';
 
 class ExportScreen extends ConsumerStatefulWidget {
   const ExportScreen({super.key, required this.documentId});
@@ -30,10 +34,13 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
     final docsState = ref.watch(documentsProvider);
     final theme = Theme.of(context);
 
-    final docWithPages = docsState.documents.firstWhere(
-      (d) => d.document.id == widget.documentId,
-      orElse: () => throw Exception('Document not found'),
-    );
+    final docWithPages = docsState.getDocumentById(widget.documentId);
+    if (docWithPages == null) {
+      return Scaffold(
+        appBar: AppBar(leading: const BackButton()),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -267,36 +274,53 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
     };
   }
 
+  String _sanitizeFilename(String title) {
+    final clean = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+    return clean.isEmpty ? 'ScanDocument' : clean;
+  }
+
   Future<void> _exportDocument() async {
     setState(() => _isExporting = true);
 
     try {
       final docsState = ref.read(documentsProvider);
-      final docWithPages = docsState.documents.firstWhere(
-        (d) => d.document.id == widget.documentId,
-      );
+      final docWithPages = docsState.getDocumentById(widget.documentId);
+      if (docWithPages == null) return;
+
+      String exportedPath = '';
 
       if (_selectedFormat == ExportFormat.pdf) {
-        await _exportAsPdf(docWithPages);
+        exportedPath = await _exportAsPdf(docWithPages);
       } else if (_selectedFormat == ExportFormat.txt) {
-        await _exportAsTxt(docWithPages);
+        exportedPath = await _exportAsTxt(docWithPages);
       } else {
-        await _exportAsJpeg(docWithPages);
+        exportedPath = await _exportAsJpeg(docWithPages);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Document exported as ${_selectedFormat.displayName}')),
+          SnackBar(
+            content: Text('Document exported as ${_selectedFormat.displayName}'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
 
-        if (_shareAfterExport) {
-          // Share logic would go here
+        if (_shareAfterExport && exportedPath.isNotEmpty) {
+          await Share.shareXFiles(
+            [XFile(exportedPath)],
+            subject: docWithPages.document.title,
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -304,75 +328,120 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
     }
   }
 
-  Future<void> _exportAsPdf(DocumentWithPages docWithPages) async {
+  Future<String> _exportAsPdf(DocumentWithPages docWithPages) async {
     final pdf = pw.Document();
+    final settings = ref.read(settingsProvider);
+    final includeWatermark = settings.shouldIncludeWatermark;
 
-    // Pre-load all image bytes before entering the synchronous PDF widget builder
+    // Pre-load and compress all image bytes according to user-selected quality
     final imageBytesList = <String, pw.MemoryImage>{};
     for (final page in docWithPages.pages) {
       if (page.imagePath.isNotEmpty && File(page.imagePath).existsSync()) {
         try {
-          final bytes = await File(page.imagePath).readAsBytes();
-          imageBytesList[page.imagePath] = pw.MemoryImage(bytes);
+          final originalBytes = await File(page.imagePath).readAsBytes();
+          if (_imageQuality < 0.98) {
+            final decoded = img.decodeImage(originalBytes);
+            if (decoded != null) {
+              final compressed = img.encodeJpg(
+                decoded,
+                quality: (_imageQuality * 100).toInt().clamp(40, 100),
+              );
+              imageBytesList[page.imagePath] = pw.MemoryImage(compressed);
+              continue;
+            }
+          }
+          imageBytesList[page.imagePath] = pw.MemoryImage(originalBytes);
         } catch (_) {}
       }
     }
 
-    for (final page in docWithPages.pages) {
+    for (var i = 0; i < docWithPages.pages.length; i++) {
+      final page = docWithPages.pages[i];
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(24),
           build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
               if (page.imagePath.isNotEmpty && imageBytesList.containsKey(page.imagePath))
                 pw.Expanded(
-                  child: pw.Image(
-                    imageBytesList[page.imagePath]!,
-                    fit: pw.BoxFit.contain,
+                  child: pw.Center(
+                    child: pw.Image(
+                      imageBytesList[page.imagePath]!,
+                      fit: pw.BoxFit.contain,
+                    ),
                   ),
                 ),
-              if (page.extractedText?.isNotEmpty == true)
+              if (page.extractedText?.trim().isNotEmpty == true)
                 pw.Padding(
-                  padding: const pw.EdgeInsets.all(16),
+                  padding: const pw.EdgeInsets.only(top: 8),
                   child: pw.Text(
-                    page.extractedText!,
-                    style: const pw.TextStyle(fontSize: 12),
+                    page.extractedText!.trim(),
+                    style: const pw.TextStyle(fontSize: 10),
                   ),
                 ),
+              if (includeWatermark) ...[
+                pw.SizedBox(height: 8),
+                pw.Align(
+                  alignment: pw.Alignment.centerRight,
+                  child: pw.Text(
+                    'Scanned with ScanVibe Pro - Page ${i + 1}',
+                    style: const pw.TextStyle(
+                      fontSize: 8,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       );
     }
 
-    await Printing.sharePdf(bytes: await pdf.save(), filename: '${docWithPages.document.title}.pdf');
+    final sanitized = _sanitizeFilename(docWithPages.document.title);
+    final pdfBytes = await pdf.save();
+
+    final docsDir = await getApplicationDocumentsDirectory();
+    final exportFile = File(p.join(docsDir.path, '$sanitized.pdf'));
+    await exportFile.writeAsBytes(pdfBytes);
+
+    return exportFile.path;
   }
 
-  Future<void> _exportAsTxt(DocumentWithPages docWithPages) async {
-    final text = docWithPages.combinedText;
+  Future<String> _exportAsTxt(DocumentWithPages docWithPages) async {
+    final text = docWithPages.combinedText.isNotEmpty
+        ? docWithPages.combinedText
+        : 'No extracted text available for ${docWithPages.document.title}.';
+    final sanitized = _sanitizeFilename(docWithPages.document.title);
     final tempDir = Directory.systemTemp;
-    final file = File('${tempDir.path}/${docWithPages.document.title}.txt');
+    final file = File(p.join(tempDir.path, '$sanitized.txt'));
     await file.writeAsString(text);
-
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: docWithPages.document.title,
-    );
+    return file.path;
   }
 
-  Future<void> _exportAsJpeg(DocumentWithPages docWithPages) async {
-    final files = <XFile>[];
+  Future<String> _exportAsJpeg(DocumentWithPages docWithPages) async {
     for (final page in docWithPages.pages) {
-      if (page.imagePath.isNotEmpty) {
-        files.add(XFile(page.imagePath));
+      if (page.imagePath.isNotEmpty && File(page.imagePath).existsSync()) {
+        if (_imageQuality < 0.98) {
+          final originalBytes = await File(page.imagePath).readAsBytes();
+          final decoded = img.decodeImage(originalBytes);
+          if (decoded != null) {
+            final compressed = img.encodeJpg(
+              decoded,
+              quality: (_imageQuality * 100).toInt().clamp(40, 100),
+            );
+            final tempDir = Directory.systemTemp;
+            final sanitized = _sanitizeFilename(docWithPages.document.title);
+            final target = File(p.join(tempDir.path, '${sanitized}_p${page.pageIndex + 1}.jpg'));
+            await target.writeAsBytes(compressed);
+            return target.path;
+          }
+        }
+        return page.imagePath;
       }
     }
-
-    if (files.isNotEmpty) {
-      await Share.shareXFiles(
-        files,
-        subject: docWithPages.document.title,
-      );
-    }
+    return '';
   }
 }

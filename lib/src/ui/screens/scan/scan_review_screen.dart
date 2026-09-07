@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image/image.dart' as img;
-
 import '../../../enums.dart';
 import '../../../services/image_processing_service.dart';
 import '../../../theme/app_colors.dart';
@@ -93,17 +91,10 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     });
 
     try {
-      final bytes = await File(_currentImagePath).readAsBytes();
-      var image = img.decodeImage(bytes);
-      if (image == null) throw Exception('Failed to decode image');
-
-      image = img.copyRotate(image, angle: degrees);
-
-      final outPath = _currentImagePath.replaceAll(
-        '.jpg',
-        '_rotated_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      final outPath = await _imageService.rotateImage(
+        inputPath: _currentImagePath,
+        degrees: degrees,
       );
-      await File(outPath).writeAsBytes(img.encodeJpg(image, quality: 92));
 
       if (mounted) {
         setState(() {

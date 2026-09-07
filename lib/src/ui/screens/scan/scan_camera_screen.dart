@@ -12,6 +12,7 @@ import '../../../enums.dart';
 import '../../../providers/documents_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../services/camera_service.dart';
+import '../../../services/ocr_service.dart';
 import '../../../theme/app_colors.dart';
 
 class ScanCameraScreen extends ConsumerStatefulWidget {
@@ -177,7 +178,7 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
         _currentDocumentId = docId;
       }
 
-      await ref.read(documentsProvider.notifier).addPageToDocument(
+      final pageId = await ref.read(documentsProvider.notifier).addPageToDocument(
             documentId: _currentDocumentId!,
             imagePath: imagePath,
             filterType: _selectedScanMode == ScanMode.document
@@ -188,6 +189,10 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
                         ? 'black_white'
                         : 'auto_enhance',
           );
+
+      if (ref.read(settingsProvider).autoProcessOcr) {
+        _triggerBackgroundOcr(pageId, imagePath);
+      }
 
       setState(() {
         _isCapturing = false;
@@ -245,11 +250,15 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
         _currentDocumentId = docId;
       }
 
-      await ref.read(documentsProvider.notifier).addPageToDocument(
+      final pageId = await ref.read(documentsProvider.notifier).addPageToDocument(
             documentId: _currentDocumentId!,
             imagePath: image.path,
             filterType: 'auto_enhance',
           );
+
+      if (ref.read(settingsProvider).autoProcessOcr) {
+        _triggerBackgroundOcr(pageId, image.path);
+      }
 
       _captureCount++;
 
@@ -270,6 +279,29 @@ class _ScanCameraScreenState extends ConsumerState<ScanCameraScreen>
         _errorMessage = 'Failed to import image: $e';
       });
     }
+  }
+
+  void _triggerBackgroundOcr(String pageId, String imagePath) {
+    final ocrService = ref.read(ocrServiceProvider);
+    final ocrLanguage = ref.read(settingsProvider).ocrLanguage;
+    ref.read(documentsProvider.notifier).updatePageOcrStatus(
+          pageId: pageId,
+          status: 'processing',
+        );
+    ocrService.extractText(imagePath: imagePath, languageHint: ocrLanguage).then((result) {
+      ref.read(documentsProvider.notifier).updatePageOcrStatus(
+            pageId: pageId,
+            status: 'complete',
+            extractedText: result.text.isNotEmpty ? result.text : null,
+            confidence: result.confidence,
+          );
+    }).catchError((e) {
+      ref.read(documentsProvider.notifier).updatePageOcrStatus(
+            pageId: pageId,
+            status: 'failed',
+            errorMessage: e.toString(),
+          );
+    });
   }
 
   void _finishCapture() {
