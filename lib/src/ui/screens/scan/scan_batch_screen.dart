@@ -263,6 +263,7 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: pages.length,
+      // ignore: deprecated_member_use
       onReorder: (oldIndex, newIndex) => _reorderPages(pages, oldIndex, newIndex),
       itemBuilder: (context, index) {
         final page = pages[index];
