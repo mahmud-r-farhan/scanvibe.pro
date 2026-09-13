@@ -251,6 +251,8 @@ class ScanVibeLocalizations {
       'deletePageConfirm': 'Are you sure you want to delete this page?',
       'reorderPages': 'Reorder Pages',
       'addMorePages': 'Add More Pages',
+      'printDocument': 'Print Document',
+      'print': 'Print',
     },
     'es': {
       'appName': 'ScanVibe',
@@ -351,6 +353,8 @@ class ScanVibeLocalizations {
       'noCameraPermission': 'Se requiere permiso de cámara para escanear documentos.',
       'openSettings': 'Abrir Ajustes',
       'done': 'Listo',
+      'printDocument': 'Imprimir documento',
+      'print': 'Imprimir',
     },
     'bn': {
       'appName': 'ScanVibe',
@@ -449,6 +453,8 @@ class ScanVibeLocalizations {
       'noCameraPermission': 'ডকুমেন্ট স্ক্যান করতে ক্যামেরা অনুমতি প্রয়োজন।',
       'openSettings': 'সেটিংস খুলুন',
       'done': 'সম্পন্ন',
+      'printDocument': 'ডকুমেন্ট প্রিন্ট করুন',
+      'print': 'প্রিন্ট',
     },
     'fr': {
       'appName': 'ScanVibe',
@@ -551,6 +557,8 @@ class ScanVibeLocalizations {
       'noCameraPermission': 'L\'autorisation de la caméra est requise.',
       'openSettings': 'Ouvrir les paramètres',
       'done': 'Terminé',
+      'printDocument': 'Imprimer le document',
+      'print': 'Imprimer',
     },
     'de': {
       'appName': 'ScanVibe',
@@ -653,6 +661,8 @@ class ScanVibeLocalizations {
       'noCameraPermission': 'Kameraberechtigung erforderlich.',
       'openSettings': 'Einstellungen öffnen',
       'done': 'Fertig',
+      'printDocument': 'Dokument drucken',
+      'print': 'Drucken',
     },
     'ar': {
       'appName': 'ScanVibe',
@@ -753,6 +763,8 @@ class ScanVibeLocalizations {
       'noCameraPermission': 'الإذن بالكاميرا مطلوب لمسح المستندات ضوئياً.',
       'openSettings': 'افتح الإعدادات',
       'done': 'تم',
+      'printDocument': 'طباعة المستند',
+      'print': 'طباعة',
     },
   };
 
