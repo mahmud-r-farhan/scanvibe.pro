@@ -263,7 +263,8 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
     return ReorderableListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: pages.length,
-      onReorderItem: (oldIndex, newIndex) => _reorderPages(pages, oldIndex, newIndex),
+      // ignore: deprecated_member_use
+      onReorder: (oldIndex, newIndex) => _reorderPages(pages, oldIndex, newIndex),
       itemBuilder: (context, index) {
         final page = pages[index];
         final isSelected = _selectedPageIds.contains(page.id);
@@ -973,7 +974,7 @@ class _ScanBatchScreenState extends ConsumerState<ScanBatchScreen> {
               children: [
                 pw.Text(
                   '${doc.document.title} - Page ${i + 1}',
-                  style: const pw.TextStyle(
+                  style: pw.TextStyle(
                     fontSize: 16,
                     fontWeight: pw.FontWeight.bold,
                   ),

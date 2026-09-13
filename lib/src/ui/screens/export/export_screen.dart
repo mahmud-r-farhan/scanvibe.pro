@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../enums.dart';
@@ -239,26 +240,43 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
             ),
           ),
 
-          // Export Button
+          // Print & Export Buttons
           Container(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: FilledButton.icon(
-                onPressed: _isExporting ? null : _exportDocument,
-                icon: _isExporting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.download_rounded),
-                label: Text(_isExporting ? 'Exporting...' : 'Export Document'),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: _isExporting ? null : _printDocument,
+                      icon: const Icon(Icons.print_rounded),
+                      label: const Text('Print'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 52,
+                    child: FilledButton.icon(
+                      onPressed: _isExporting ? null : _exportDocument,
+                      icon: _isExporting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.download_rounded),
+                      label: Text(_isExporting ? 'Exporting...' : 'Export Document'),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -272,6 +290,21 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
       ExportFormat.jpeg => Icons.image_rounded,
       ExportFormat.txt => Icons.text_snippet_rounded,
     };
+  }
+
+  Future<void> _printDocument() async {
+    final docsState = ref.read(documentsProvider);
+    final docWithPages = docsState.getDocumentById(widget.documentId);
+    if (docWithPages == null) return;
+
+    final pdfPath = await _exportAsPdf(docWithPages);
+    if (File(pdfPath).existsSync()) {
+      final bytes = await File(pdfPath).readAsBytes();
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => bytes,
+        name: docWithPages.document.title,
+      );
+    }
   }
 
   String _sanitizeFilename(String title) {

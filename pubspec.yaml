@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 2.0.0+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: ">=3.11.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -14,7 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_localizations:
     sdk: flutter
-  intl: 0.20.2
+  intl: ^0.20.2
   shared_preferences: ^2.5.5
 
   # State Management
@@ -37,8 +37,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.16.0
 
   # PDF & Export
-  pdf: ^3.13.0
-  printing: ^5.15.0
+  pdf: ^3.11.1
+  printing: ^5.13.3
   share_plus: ^10.1.4
 
   # Utilities
